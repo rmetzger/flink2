@@ -471,6 +471,14 @@ public class NetUtils {
 							LOG.info("Trying to connect to address {}." + targetAddress);
 						}
 
+						// before trying with different strategies: test with getLocalHost():
+						InetAddress localhostName = InetAddress.getLocalHost();
+
+						if(tryToConnect(localhostName, targetAddress, AddressDetectionState.ADDRESS.getTimeout(), false)) {
+							LOG.debug("Using immediately InetAddress.getLocalHost() for the connecting address");
+							return localhostName;
+						}
+
 						do {
 							InetAddress address = NetUtils.findAddressUsingStrategy(strategy, targetAddress, logging);
 							if (address != null) {
