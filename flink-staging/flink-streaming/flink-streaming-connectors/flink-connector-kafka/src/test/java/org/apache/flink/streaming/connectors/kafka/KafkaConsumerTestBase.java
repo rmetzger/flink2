@@ -139,13 +139,13 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		Assert.assertArrayEquals(initialOffsets, state2);
 		Assert.assertEquals(2, pendingCheckpoints.size());
 
-		source.notifyCheckpointComplete(1);
+		source.commitCheckpoint(1);
 		Assert.assertEquals(1, pendingCheckpoints.size());
 
-		source.notifyCheckpointComplete(2);
+		source.commitCheckpoint(2);
 		Assert.assertEquals(0, pendingCheckpoints.size());
 
-		source.notifyCheckpointComplete(666); // invalid checkpoint
+		source.commitCheckpoint(666); // invalid checkpoint
 		Assert.assertEquals(0, pendingCheckpoints.size());
 
 		// create 500 snapshots
@@ -155,14 +155,14 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		Assert.assertEquals(FlinkKafkaConsumer.MAX_NUM_PENDING_CHECKPOINTS, pendingCheckpoints.size());
 
 		// commit only the second last
-		source.notifyCheckpointComplete(598);
+		source.commitCheckpoint(598);
 		Assert.assertEquals(1, pendingCheckpoints.size());
 
 		// access invalid checkpoint
-		source.notifyCheckpointComplete(590);
+		source.commitCheckpoint(590);
 
 		// and the last
-		source.notifyCheckpointComplete(599);
+		source.commitCheckpoint(599);
 		Assert.assertEquals(0, pendingCheckpoints.size());
 
 		source.close();
@@ -262,10 +262,10 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		TypeInformation<Tuple2<Long, String>> longStringType = TypeInfoParser.parse("Tuple2<Long, String>");
 
 		TypeInformationSerializationSchema<Tuple2<Long, String>> sourceSchema =
-				new TypeInformationSerializationSchema<>(longStringType, env.getConfig());
+				new TypeInformationSerializationSchema<Tuple2<Long, String>>(longStringType, env.getConfig());
 
 		TypeInformationSerializationSchema<Tuple2<Long, String>> sinkSchema =
-				new TypeInformationSerializationSchema<>(longStringType, env.getConfig());
+				new TypeInformationSerializationSchema<Tuple2<Long, String>>(longStringType, env.getConfig());
 
 		// ----------- add producer dataflow ----------
 
@@ -290,7 +290,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				running = false;
 			}
 		});
-		stream.addSink(new FlinkKafkaProducer<>(brokerConnectionStrings, topic, sinkSchema));
+		stream.addSink(new KafkaSink<Tuple2<Long, String>>(brokerConnectionStrings, topic, sinkSchema));
 
 		// ----------- add consumer dataflow ----------
 
@@ -361,7 +361,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		// run the topology that fails and recovers
 
 		DeserializationSchema<Integer> schema =
-				new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Integer>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.enableCheckpointing(500);
@@ -408,7 +408,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		// run the topology that fails and recovers
 
 		DeserializationSchema<Integer> schema =
-				new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Integer>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.enableCheckpointing(500);
@@ -455,7 +455,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		// run the topology that fails and recovers
 
 		DeserializationSchema<Integer> schema =
-				new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Integer>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.enableCheckpointing(500);
@@ -496,7 +496,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 		// launch a consumer asynchronously
 
-		final AtomicReference<Throwable> jobError = new AtomicReference<>();
+		final AtomicReference<Throwable> jobError = new AtomicReference<Throwable>();
 
 		final Runnable jobRunner = new Runnable() {
 			@Override
@@ -526,7 +526,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		Thread.sleep(2000);
 
 		// cancel
-		JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout));
+		JobManagerCommunicationUtils.cancelCurrentJob(flink.getJobManager());
 
 		// wait for the program to be done and validate that we failed with the right exception
 		runnerThread.join();
@@ -561,7 +561,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		final int parallelism = 3;
 		createTestTopic(topic, parallelism, 1);
 
-		final AtomicReference<Throwable> error = new AtomicReference<>();
+		final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
 
 		final Runnable jobRunner = new Runnable() {
 			@Override
@@ -591,7 +591,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		Thread.sleep(2000);
 
 		// cancel
-		JobManagerCommunicationUtils.cancelCurrentJob(flink.getLeaderGateway(timeout));
+		JobManagerCommunicationUtils.cancelCurrentJob(flink.getJobManager());
 
 		// wait for the program to be done and validate that we failed with the right exception
 		runnerThread.join();
@@ -612,7 +612,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		createTestTopic(topic, 2, 1);
 
 		DeserializationSchema<Integer> schema =
-				new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Integer>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(12); // needs to be more that the mini cluster has slots
@@ -688,10 +688,10 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		final TypeInformation<Tuple2<Long, byte[]>> longBytesInfo = TypeInfoParser.parse("Tuple2<Long, byte[]>");
 
 		final TypeInformationSerializationSchema<Tuple2<Long, byte[]>> serSchema =
-				new TypeInformationSerializationSchema<>(longBytesInfo, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(longBytesInfo, new ExecutionConfig());
 
 		final TypeInformationSerializationSchema<Tuple2<Long, byte[]>> deserSchema =
-				new TypeInformationSerializationSchema<>(longBytesInfo, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Tuple2<Long, byte[]>>(longBytesInfo, new ExecutionConfig());
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setNumberOfExecutionRetries(0);
@@ -771,7 +771,8 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 			}
 		});
 
-		stream.addSink(new FlinkKafkaProducer<>(topic, deserSchema, producerProps));
+		stream.addSink(new KafkaSink<Tuple2<Long, byte[]>>(brokerConnectionStrings, topic,
+				producerProps, deserSchema));
 
 		tryExecute(env, "big topology test");
 
@@ -823,7 +824,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		// run the topology that fails and recovers
 
 		DeserializationSchema<Integer> schema =
-				new TypeInformationSerializationSchema<>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
+				new TypeInformationSerializationSchema<Integer>(BasicTypeInfo.INT_TYPE_INFO, new ExecutionConfig());
 
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.createRemoteEnvironment("localhost", flinkPort);
 		env.setParallelism(parallelism);
@@ -843,9 +844,6 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		BrokerKillingMapper.killedLeaderBefore = false;
 		tryExecute(env, "One-to-one exactly once test");
 
-		// start a new broker:
-		brokers.set(leaderIdToShutDown, getKafkaServer(leaderIdToShutDown, tmpKafkaDirs.get(leaderIdToShutDown), kafkaHost, zookeeperConnectionString));
-
 		LOG.info("finished runBrokerFailureTest()");
 	}
 
@@ -863,7 +861,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		final TypeInformation<Tuple2<Integer, Integer>> intIntTupleType = TypeInfoParser.parse("Tuple2<Integer, Integer>");
 
 		final TypeInformationSerializationSchema<Tuple2<Integer, Integer>> deser =
-				new TypeInformationSerializationSchema<>(intIntTupleType, env.getConfig());
+				new TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(intIntTupleType, env.getConfig());
 
 		// create the consumer
 		FlinkKafkaConsumer<Tuple2<Integer, Integer>> consumer = getConsumer(topicName, deser, cc);
@@ -928,10 +926,10 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 				running = false;
 			}
 		}).setParallelism(parallelism);
-		
-		stream.addSink(new FlinkKafkaProducer<>(topicName,
-				new TypeInformationSerializationSchema<>(resultType, env.getConfig()),
-				FlinkKafkaProducer.getPropertiesFromBrokerList(brokerConnectionStrings),
+
+		stream.addSink(new KafkaSink<Tuple2<Integer, Integer>>(brokerConnectionStrings,
+				topicName,
+				new TypeInformationSerializationSchema<Tuple2<Integer, Integer>>(resultType, env.getConfig()),
 				new Tuple2Partitioner(parallelism)
 		)).setParallelism(parallelism);
 
@@ -1006,7 +1004,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 
 
 	public static class BrokerKillingMapper<T> extends RichMapFunction<T,T>
-			implements Checkpointed<Integer>, CheckpointNotifier {
+			implements Checkpointed<Integer>, CheckpointCommitter {
 
 		private static final long serialVersionUID = 6334389850158707313L;
 
@@ -1062,7 +1060,7 @@ public abstract class KafkaConsumerTestBase extends KafkaTestBase {
 		}
 
 		@Override
-		public void notifyCheckpointComplete(long checkpointId) {
+		public void commitCheckpoint(long checkpointId) {
 			hasBeenCheckpointed = true;
 		}
 

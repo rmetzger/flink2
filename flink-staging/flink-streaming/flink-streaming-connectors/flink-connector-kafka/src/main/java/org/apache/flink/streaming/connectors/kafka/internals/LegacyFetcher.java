@@ -358,7 +358,7 @@ public class LegacyFetcher implements Fetcher {
 				// those partitions that do not have an offset from a checkpoint need to get
 				// their start offset from ZooKeeper
 				{
-					List<FetchPartition> partitionsToGetOffsetsFor = new ArrayList<>();
+					List<FetchPartition> partitionsToGetOffsetsFor = new ArrayList<FetchPartition>();
 
 					for (FetchPartition fp : partitions) {
 						if (fp.nextOffsetToRead == FlinkKafkaConsumer.OFFSET_NOT_SET) {
@@ -392,7 +392,7 @@ public class LegacyFetcher implements Fetcher {
 
 					if (fetchResponse.hasError()) {
 						String exception = "";
-						List<FetchPartition> partitionsToGetOffsetsFor = new ArrayList<>();
+						List<FetchPartition> partitionsToGetOffsetsFor = new ArrayList<FetchPartition>();
 						for (FetchPartition fp : partitions) {
 							short code = fetchResponse.errorCode(topic, fp.partition);
 
