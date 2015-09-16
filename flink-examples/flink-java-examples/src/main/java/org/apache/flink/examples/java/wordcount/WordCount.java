@@ -60,6 +60,7 @@ public class WordCount {
 		
 		// set up the execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		env.createInput(new MyInputFormat());
 
 		// get input data
 		DataSet<String> text = getTextDataSet(env);

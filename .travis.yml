@@ -17,7 +17,7 @@ matrix:
     - jdk: "openjdk7"
       env: PROFILE="-Dhadoop.profile=1 -Dscala-2.11"
     - jdk: "oraclejdk7" # this will also deploy a uberjar to s3 at some point
-      env: PROFILE="-Dhadoop.profile=1"
+      env: PROFILE="-Dhadoop.version=2.5.0"
     - jdk: "openjdk7"
       env: PROFILE="-Dhadoop.version=2.3.0"
     - jdk: "oraclejdk7"
