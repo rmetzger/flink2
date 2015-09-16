@@ -132,7 +132,15 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		LOG.info("Waiting until two containers are running");
 		// wait until two containers are running
 		while(getRunningContainers() < 2) {
-			sleep(500);
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// logging exception and failing test. The test is about making sure that
+				// two containers (JM+TM) are starting. If they are not started or we
+				// get interrupted in the meantime, something is wrong.
+				LOG.warn("Got interrupted", e);
+				Assert.fail("Got interrupted while waiting for containers to appear");
+			}
 		}
 		LOG.info("Two containers are running. Killing the application");
 
@@ -149,11 +157,11 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			yc.killApplication(id);
 
 			while(yc.getApplications(EnumSet.of(YarnApplicationState.KILLED)).size() == 0) {
-				sleep(500);
+				Thread.sleep(500);
 			}
 		} catch(Throwable t) {
 			LOG.warn("Killing failed", t);
-			Assert.fail();
+			Assert.fail("Killing of yarn application failed: "+t.getMessage());
 		}
 
 		LOG.info("Finished testDetachedMode()");
@@ -251,17 +259,21 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 					nodeManager = nm;
 					nmIdent = new NMTokenIdentifier(taskManagerContainer.getApplicationAttemptId(), null, "",0);
 					// allow myself to do stuff with the container
-					// remoteUgi.addCredentials(entry.getValue().getCredentials());
 					remoteUgi.addTokenIdentifier(nmIdent);
 				}
 			}
-			sleep(500);
+			/*try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				LOG.warn("Interrupted", e);
+				Assert.fail("Got interrupted while adding tokens");
+			} */
 		}
 
 		Assert.assertNotNull("Unable to find container with TaskManager", taskManagerContainer);
 		Assert.assertNotNull("Illegal state", nodeManager);
 
-		List<ContainerId> toStop = new LinkedList<ContainerId>();
+		List<ContainerId> toStop = new LinkedList<>();
 		toStop.add(taskManagerContainer);
 		StopContainersRequest scr = StopContainersRequest.newInstance(toStop);
 
@@ -284,7 +296,12 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				o = o.substring(killedOff);
 				ok = o.indexOf("Launching container") > 0;
 			}
-			sleep(1000);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				LOG.warn("Got interrupted", e);
+				Assert.fail("Got interrupted while waiting for new container to be started after a container failure");
+			}
 		} while(!ok);
 
 
@@ -453,16 +470,16 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 		yc.start();
 
 		// get temporary folder for writing output of wordcount example
-		File tmpOutFolder = null;
-		try{
+		File tmpOutFolder;
+		try {
 			tmpOutFolder = tmp.newFolder();
 		}
-		catch(IOException e) {
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 
 		// get temporary file for reading input data for wordcount example
-		File tmpInFile = null;
+		File tmpInFile;
 		try{
 			tmpInFile = tmp.newFile();
 			FileUtils.writeStringToFile(tmpInFile,WordCountData.TEXT);
@@ -499,7 +516,7 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 				LOG.info("waiting for the job with appId {} to finish", tmpAppId);
 				// wait until the app has finished
 				while(yc.getApplications(EnumSet.of(YarnApplicationState.RUNNING)).size() > 0) {
-					sleep(500);
+					Thread.sleep(500);
 				}
 			} else {
 				// get appId by finding the latest finished appid
@@ -557,14 +574,14 @@ public class YARNSessionFIFOITCase extends YarnTestBase {
 			LOG.info("Checking again that app has finished");
 			ApplicationReport rep;
 			do {
-				sleep(500);
+				Thread.sleep(500);
 				rep = yc.getApplicationReport(id);
 				LOG.info("Got report {}", rep);
 			} while(rep.getYarnApplicationState() == YarnApplicationState.RUNNING);
 
 		} catch(Throwable t) {
 			LOG.warn("Error while detached yarn session was running", t);
-			Assert.fail(t.getMessage());
+			Assert.fail("Error while detached yarn session was running: " + t.getMessage());
 		}
 	}
 

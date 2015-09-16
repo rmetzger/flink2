@@ -298,14 +298,6 @@ public abstract class YarnTestBase extends TestLogger {
 		}
 	}
 
-	public static void sleep(int time) {
-		try {
-			Thread.sleep(time);
-		} catch (InterruptedException e) {
-			LOG.warn("Interruped",e);
-		}
-	}
-
 	public static int getRunningContainers() {
 		int count = 0;
 		for(int nmId = 0; nmId < NUM_NODEMANAGERS; nmId++) {
@@ -345,7 +337,7 @@ public abstract class YarnTestBase extends TestLogger {
 				yarnCluster.start();
 			}
 
-			Map<String, String> map = new HashMap<String, String>(System.getenv());
+			Map<String, String> map = new HashMap<>(System.getenv());
 			File flinkConfFilePath = findFile(flinkDistRootDir, new ContainsName(new String[] {"flink-conf.yaml"}));
 			Assert.assertNotNull(flinkConfFilePath);
 			map.put("FLINK_CONF_DIR", flinkConfFilePath.getParent());
@@ -393,11 +385,16 @@ public abstract class YarnTestBase extends TestLogger {
 		final int START_TIMEOUT_SECONDS = 60;
 
 		Runner runner = new Runner(args, type);
-		runner.setName("Frontend (CLI/YARN Client) runner thread (runWithArgs()).");
+		runner.setName("Frontend (CLI/YARN Client) runner thread (startWithArgs()).");
 		runner.start();
 
 		for(int second = 0; second <  START_TIMEOUT_SECONDS; second++) {
-			sleep(1000);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				LOG.warn("Got interrupted", e);
+				Assert.fail("Got interrupted while starting the runner");
+			}
 			// check output for correct TaskManager startup.
 			if(outContent.toString().contains(startedAfterString)
 					|| errContent.toString().contains(startedAfterString) ) {
@@ -438,7 +435,13 @@ public abstract class YarnTestBase extends TestLogger {
 
 		boolean expectedStringSeen = false;
 		do {
-			sleep(1000);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				LOG.warn("Got interrupted", e);
+				Assert.fail("Test got interrupted while waiting for output strings to show up.");
+			}
+
 			String outContentString = outContent.toString();
 			String errContentString = errContent.toString();
 			if(failOnStrings != null) {
