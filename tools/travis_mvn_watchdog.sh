@@ -17,6 +17,10 @@
 # limitations under the License.
 ################################################################################
 
+echo "#################### DEBUG ENV ############### "
+env
+
+
 HERE="`dirname \"$0\"`"				# relative
 HERE="`( cd \"$HERE\" && pwd )`" 	# absolutized and normalized
 if [ -z "$HERE" ] ; then
