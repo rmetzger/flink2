@@ -114,6 +114,9 @@ public abstract class YarnTestBase extends TestLogger {
 		yarnConfiguration.setInt(YarnConfiguration.NM_VCORES, 666); // memory is overwritten in the MiniYARNCluster.
 		// so we have to change the number of cores for testing.
 		yarnConfiguration.setInt(YarnConfiguration.RM_AM_EXPIRY_INTERVAL_MS, 20000); // 20 seconds expiry (to ensure we properly heartbeat with YARN).
+		// fix Hadoop 2.3.0 tests
+		yarnConfiguration.set("yarn.nodemanager.hostname", "localhost");
+		yarnConfiguration.set("yarn.resourcemanager.hostname", "localhost");
 	}
 
 
