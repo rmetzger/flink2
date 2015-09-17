@@ -217,7 +217,7 @@ public class FlinkYarnSessionCli {
 
 		if (cmd.hasOption(DETACHED.getOpt())) {
 			this.detachedMode = true;
-			flinkYarnClient.setDetachedMode(detachedMode);
+			flinkYarnClient.setDetachedMode(true);
 		}
 
 		if (cmd.hasOption(STREAMING.getOpt())) {
@@ -279,7 +279,9 @@ public class FlinkYarnSessionCli {
 		} catch (IOException e) {
 			throw new RuntimeException("Error writing the properties file", e);
 		}
-		propertiesFile.setReadable(true, false); // readable for all.
+		if(!propertiesFile.setReadable(true, false)) {
+			LOG.warn("Unable to make properties file {} readable", propertiesFile);
+		}
 	}
 
 	public static void runInteractiveCli(AbstractFlinkYarnCluster yarnCluster) {
@@ -375,7 +377,7 @@ public class FlinkYarnSessionCli {
 		getYARNSessionCLIOptions(options);
 
 		CommandLineParser parser = new PosixParser();
-		CommandLine cmd = null;
+		CommandLine cmd;
 		try {
 			cmd = parser.parse(options, args);
 		} catch(Exception e) {
@@ -387,6 +389,12 @@ public class FlinkYarnSessionCli {
 		// Query cluster for metrics
 		if (cmd.hasOption(QUERY.getOpt())) {
 			AbstractFlinkYarnClient flinkYarnClient = getFlinkYarnClient();
+
+			if (flinkYarnClient == null) {
+				System.err.println("Error while starting the YARN Client. Please check log output!");
+				return 1;
+			}
+
 			String description;
 			try {
 				description = flinkYarnClient.getClusterDescription();
@@ -404,7 +412,6 @@ public class FlinkYarnSessionCli {
 				System.err.println("Error while starting the YARN Client. Please check log output!");
 				return 1;
 			}
-
 
 			try {
 				yarnCluster = flinkYarnClient.deploy();
@@ -461,7 +468,9 @@ public class FlinkYarnSessionCli {
 				}
 
 				try {
-					yarnPropertiesFile.delete();
+					if(!yarnPropertiesFile.delete()) {
+						LOG.warn("Unable to delete yarn properties file {}", yarnPropertiesFile);
+					}
 				} catch (Exception e) {
 					LOG.warn("Exception while deleting the JobManager address file", e);
 				}
