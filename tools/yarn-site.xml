@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -16,7 +17,8 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><configuration>
+
+<configuration>
 <property><name>yarn.scheduler.maximum-allocation-mb</name><value>4096</value><source>programatically</source></property>
 <property><name>yarn.resourcemanager.hostname</name><value>localhost</value><source>programatically</source></property>
 <property><name>yarn.resourcemanager.am.max-attempts</name><value>2</value><source>programatically</source></property>
