@@ -147,13 +147,6 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 
 	public FlinkYarnClient() {
 		conf = new YarnConfiguration();
-		if(this.yarnClient == null) {
-			// Create yarnClient
-			yarnClient = YarnClient.createYarnClient();
-			yarnClient.init(conf);
-			yarnClient.start();
-		}
-
 		// for unit tests only
 		if(System.getenv("IN_TESTS") != null) {
 			try {
@@ -161,6 +154,13 @@ public class FlinkYarnClient extends AbstractFlinkYarnClient {
 			} catch (Throwable t) {
 				throw new RuntimeException("Error",t);
 			}
+		}
+
+		if(this.yarnClient == null) {
+			// Create yarnClient
+			yarnClient = YarnClient.createYarnClient();
+			yarnClient.init(conf);
+			yarnClient.start();
 		}
 	}
 

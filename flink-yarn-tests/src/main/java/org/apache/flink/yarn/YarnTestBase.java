@@ -101,6 +101,8 @@ public abstract class YarnTestBase extends TestLogger {
 
 	protected static final Configuration yarnConfiguration;
 
+	private YarnClient yarnClient = null;
+
 	static {
 		yarnConfiguration = new YarnConfiguration();
 		yarnConfiguration.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 512);
@@ -133,7 +135,6 @@ public abstract class YarnTestBase extends TestLogger {
 		}
 	}
 
-	private YarnClient yarnClient = null;
 	@Before
 	public void checkClusterEmpty() throws IOException, YarnException {
 		if(yarnClient == null) {
