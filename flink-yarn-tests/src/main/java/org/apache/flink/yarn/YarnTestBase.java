@@ -46,12 +46,14 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -339,7 +341,7 @@ public abstract class YarnTestBase extends TestLogger {
 			}
 
 			Map<String, String> map = new HashMap<>(System.getenv());
-			File flinkConfFilePath = findFile(flinkDistRootDir, new ContainsName(new String[] {"flink-conf.yaml"}));
+			File flinkConfFilePath = findFile(flinkDistRootDir, new ContainsName(new String[]{"flink-conf.yaml"}));
 			Assert.assertNotNull(flinkConfFilePath);
 			map.put("FLINK_CONF_DIR", flinkConfFilePath.getParent());
 			File yarnConfFile = writeYarnSiteConfigXML(conf);
@@ -582,4 +584,25 @@ public abstract class YarnTestBase extends TestLogger {
 		return System.getenv("TRAVIS") != null && System.getenv("TRAVIS").equals("true");
 	}
 
+
+	public static void main(String[] args) throws IOException, InterruptedException {
+
+		File conf = writeYarnSiteConfigXML(yarnConfiguration);
+		System.out.println("conf = "+conf);
+		//Process p = Runtime.getRuntime().exec("/bin/bash -c export THIS_IS_A_TEST=abc");
+		Process p = Runtime.getRuntime().exec("bash -c export ABC=abc");
+
+		System.out.println("Exit " + p.waitFor());
+
+		InputStream is = p.getErrorStream();
+		Scanner sc = new Scanner(is);
+		while(sc.hasNext()) {
+			System.out.println("ELine: "+sc.nextLine());
+		}
+
+		sc = new Scanner(p.getInputStream());
+		while(sc.hasNext()) {
+			System.out.println("SLine: "+sc.nextLine());
+		}
+	}
 }

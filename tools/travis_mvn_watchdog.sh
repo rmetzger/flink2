@@ -200,6 +200,10 @@ echo "RUNNING '${MVN}'."
 ( $MVN & PID=$! ; echo $PID >&3 ; wait $PID ; echo $? >&4 ) 3>$MVN_PID 4>$MVN_EXIT | tee $MVN_OUT
 
 echo "STARTING YARN TESTS"
+export HADOOP_CONF_DIR=`pwd`/tools
+
+echo "HADOOP_CONF_DIR=$HADOOP_CONF_DIR"
+
 cd flink-yarn-tests
 mvn -Dflink.forkCount=2 -B $PROFILE -Dlog.dir=${ARTIFACTS_DIR} -Dlog4j.configuration=file://$LOG4J_PROPERTIES verify
 cd ..
